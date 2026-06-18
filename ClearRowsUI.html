@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; margin: 10px; }
+      .container { margin-bottom: 10px; }
+      label { margin-right: 5px; }
+      input[type="number"] { width: 60px; padding: 5px; }
+      button { padding: 8px 12px; margin-top: 5px; cursor: pointer; }
+      #selectedRowsList { margin-top:10px; padding:5px; border:1px solid #ccc; min-height: 50px; background-color:#f9f9f9; }
+      .row-item { background-color: #e0e0e0; padding: 3px 6px; margin: 3px; border-radius: 3px; display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <label for="rowNum">Row Number:</label>
+      <input type="number" id="rowNum" min="1">
+      <button onclick="addRow()">Add Row to Clear List</button>
+    </div>
+
+    <div><strong>Rows to Clear:</strong></div>
+    <div id="selectedRowsList">
+      </div>
+
+    <button onclick="processClearRows()">Clear Selected Rows</button>
+
+    <script>
+      let rowsToClear = [];
+
+      function addRow() {
+        const rowNumInput = document.getElementById('rowNum');
+        const rowNum = parseInt(rowNumInput.value);
+        const selectedRowsDiv = document.getElementById('selectedRowsList');
+
+        if (isNaN(rowNum) || rowNum < 1) {
+          alert('Please enter a valid row number.');
+          return;
+        }
+        if (!rowsToClear.includes(rowNum)) {
+          rowsToClear.push(rowNum);
+          rowsToClear.sort((a, b) => a - b); // Keep the list sorted
+          renderSelectedRows();
+        } else {
+          alert('Row ' + rowNum + ' is already in the list.');
+        }
+        rowNumInput.value = ''; // Clear input field
+      }
+
+      function renderSelectedRows() {
+        const selectedRowsDiv = document.getElementById('selectedRowsList');
+        selectedRowsDiv.innerHTML = ''; // Clear current list
+        rowsToClear.forEach(row => {
+          const rowElement = document.createElement('span');
+          rowElement.textContent = row;
+          rowElement.className = 'row-item';
+          selectedRowsDiv.appendChild(rowElement);
+        });
+      }
+
+      function processClearRows() {
+        if (rowsToClear.length === 0) {
+          alert('No rows have been added to the list.');
+          return;
+        }
+        // Disable button to prevent multiple clicks
+        const clearButton = event.target;
+        clearButton.disabled = true;
+        clearButton.textContent = 'Processing...';
+
+        google.script.run
+          .withSuccessHandler(() => {
+            rowsToClear = []; // Clear the array
+            renderSelectedRows(); // Update the UI
+            alert('Selected rows have been processed.');
+            clearButton.disabled = false;
+            clearButton.textContent = 'Clear Selected Rows';
+          })
+          .withFailureHandler(err => {
+            alert('Error: ' + err);
+            clearButton.disabled = false;
+            clearButton.textContent = 'Clear Selected Rows';
+          })
+          .clearSelectedRows(JSON.stringify(rowsToClear));
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script>
+      // This function is called when the "Select File" button is clicked.
+      function showPicker() {
+        alert('Button Clicked!'); // <-- THIS IS THE NEW DEBUGGING LINE
+        
+        const oauthToken = google.script.run.withSuccessHandler(createPicker)
+                                           .withFailureHandler(showError)
+                                           .getOAuthToken();
+      }
+
+      // This function builds and displays the Google Picker.
+      function createPicker(token) {
+        const targetRange = "<?!= targetRange ?>";
+        const view = new google.picker.View(google.picker.ViewId.DOCS);
+        view.setMimeTypes("application/pdf,image/jpeg,image/png");
+
+        const picker = new google.picker.PickerBuilder()
+            .addView(view)
+            .setOAuthToken(token)
+            .setCallback(pickerCallback)
+            .build();
+        picker.setVisible(true);
+        picker.targetRange = targetRange;
+      }
+
+      // This function runs when a user selects a file from the picker.
+      function pickerCallback(data) {
+        if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
+          const doc = data[google.picker.Response.DOCUMENTS][0];
+          const url = doc[google.picker.Document.URL];
+          const targetRange = this.targetRange;
+          
+          google.script.run.saveUrlToSheet(url, targetRange);
+          google.script.host.close();
+        }
+      }
+
+      function showError(error) {
+        document.getElementById('status').innerHTML = "Error: " + error.message;
+      }
+    </script>
+  </head>
+  <body style="font-family: Arial, sans-serif; text-align: center; padding-top: 50px;">
+    <h2>Select a file from Google Drive</h2>
+    <p>Click the button below to open the file selector.</p>
+    <button onclick="showPicker();" style="padding: 10px 20px; font-size: 16px;">Select File</button>
+    <p id="status"></p>
+    
+    <script type="text/javascript" src="https://apis.google.com/js/api.js?onload=onApiLoad"></script>
+    <script type="text/javascript">
+      function onApiLoad() {
+        gapi.load('picker', {'callback': function() { /* API is loaded */ }});
+      }
+    </script>
+  </body>
+</html>
